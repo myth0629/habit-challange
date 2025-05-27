@@ -30,10 +30,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+        
+        logger.debug("Incoming request - Path: " + path + ", Method: " + method);
+        
+        // /api/auth/** 경로는 JWT 검증을 건너뜁니다.
+        if (path.startsWith("/api/auth/")) {
+            logger.debug("Skipping JWT validation for auth endpoint: " + path);
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
         try {
             String jwt = parseJwt(request);
+            logger.debug("JWT Token: " + (jwt != null ? "[HIDDEN]" : "null"));
+            
             if (jwt != null && jwtUtil.validateToken(jwt, null)) {
                 String username = jwtUtil.extractUsername(jwt);
+                logger.debug("Valid JWT token for user: " + username);
+                
                 UserDetails userDetails = userService.loadUserByUsername(username);
                 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -41,9 +57,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                logger.debug("Successfully set authentication for user: " + username);
+            } else {
+                logger.warn("No valid JWT token found");
             }
         } catch (Exception e) {
-            logger.error("사용자 인증 설정 중 오류가 발생했습니다: " + e.getMessage(), e);
+            String errorMsg = "사용자 인증 설정 중 오류가 발생했습니다: " + e.getMessage();
+            logger.error(errorMsg, e);
+            
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"" + e.getMessage() + "\"}");
+            return;
         }
         
         filterChain.doFilter(request, response);

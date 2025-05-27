@@ -40,7 +40,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public UserResponseDto register(RegisterRequestDto requestDto) {
         // 비밀번호 확인
-        if (!requestDto.getPassword().equals(requestDto.getConfirmPassword())) {
+        if (!requestDto.isPasswordMatching()) {
             throw new PasswordMismatchException("비밀번호가 일치하지 않습니다.");
         }
 
@@ -49,22 +49,25 @@ public class UserService implements UserDetailsService {
             throw new DuplicateEmailException("이미 사용 중인 이메일입니다.");
         }
 
-        // 닉네임 중복 체크
+        // 사용자 이름 중복 체크 (username을 nickname으로 사용)
         if (userRepository.existsByNickname(requestDto.getUsername())) {
-            throw new DuplicateUsernameException("이미 사용 중인 닉네임입니다.");
+            throw new DuplicateUsernameException("이미 사용 중인 사용자 이름입니다.");
         }
 
-        // 사용자 생성
-        User user = User.builder()
-                .email(requestDto.getEmail())
-                .nickname(requestDto.getUsername())  // username을 nickname으로 매핑
-                .password(passwordEncoder.encode(requestDto.getPassword()))
-                .role(UserRole.USER)
-                .build();
+        try {
+            // 사용자 생성
+            User user = User.builder()
+                    .email(requestDto.getEmail())
+                    .nickname(requestDto.getUsername())
+                    .password(passwordEncoder.encode(requestDto.getPassword()))
+                    .role(UserRole.USER)
+                    .build();
 
-        // 사용자 저장
-        User savedUser = userRepository.save(user);
-
-        return UserResponseDto.from(savedUser);
+            // 사용자 저장
+            User savedUser = userRepository.save(user);
+            return UserResponseDto.from(savedUser);
+        } catch (Exception e) {
+            throw new RuntimeException("회원가입 중 오류가 발생했습니다: " + e.getMessage(), e);
+        }
     }
 }

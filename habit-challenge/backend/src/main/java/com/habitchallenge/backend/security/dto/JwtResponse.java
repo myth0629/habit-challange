@@ -25,7 +25,7 @@ public class JwtResponse {
     private Long id;
     
     /** 사용자 이름 */
-    private String username;
+    private String nickname;
     
     /** 사용자 이메일 */
     private String email;

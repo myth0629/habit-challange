@@ -27,11 +27,19 @@ public class RegisterRequestDto {
     @NotBlank(message = "비밀번호는 필수 입력값입니다.")
     @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
     @Pattern(
-        regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$",
-        message = "비밀번호는 영문, 숫자, 특수문자를 모두 포함해야 합니다."
+        regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$",
+        message = "비밀번호는 영문과 숫자를 모두 포함해야 합니다."
     )
     private String password;
 
     @NotBlank(message = "비밀번호 확인은 필수 입력값입니다.")
     private String confirmPassword;
+    
+    /**
+     * 비밀번호와 비밀번호 확인이 일치하는지 검증합니다.
+     * @return 비밀번호가 일치하면 true, 그렇지 않으면 false
+     */
+    public boolean isPasswordMatching() {
+        return password != null && password.equals(confirmPassword);
+    }
 }
