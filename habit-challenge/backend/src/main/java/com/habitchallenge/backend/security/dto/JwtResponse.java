@@ -32,4 +32,7 @@ public class JwtResponse {
     
     /** 사용자 역할 */
     private String role;
+    
+    /** 오류 메시지 */
+    private String errorMessage;
 }

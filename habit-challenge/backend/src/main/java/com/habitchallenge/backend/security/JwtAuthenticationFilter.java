@@ -35,9 +35,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         logger.debug("Incoming request - Path: " + path + ", Method: " + method);
         
-        // /api/auth/** 경로는 JWT 검증을 건너뜁니다.
-        if (path.startsWith("/api/auth/")) {
-            logger.debug("Skipping JWT validation for auth endpoint: " + path);
+        // 인증이 필요없는 경로는 JWT 검증을 건너뜁니다.
+        if (path.startsWith("/api/auth/") || 
+            path.startsWith("/auth/") ||
+            path.startsWith("/api/users/register") ||
+            path.startsWith("/users/register") ||
+            path.startsWith("/api/challenges/all") ||
+            path.startsWith("/challenges/all") ||
+            path.equals("/error") ||
+            method.equals("OPTIONS")) {
+            logger.debug("Skipping JWT validation for public endpoint: " + path);
             filterChain.doFilter(request, response);
             return;
         }

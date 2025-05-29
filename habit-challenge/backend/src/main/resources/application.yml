@@ -1,35 +1,36 @@
 server:
   port: 8080
   servlet:
-    context-path: /api
+    context-path: # 컨텍스트 경로 사용하지 않음
 
 spring:
   application:
     name: habit-challenge
   
-  # Database 설정
+  # MySQL 데이터베이스 설정
   datasource:
-    url: jdbc:mysql://localhost:3306/habit_challenge?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/habit_challenge?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
     username: root
     password: song010629
     driver-class-name: com.mysql.cj.jdbc.Driver
   
+  # JPA 설정
   jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:
       ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        use_sql_comments: true
 
 # JWT 설정
 jwt:
-  secret: your_jwt_secret_key_here_make_it_long_and_secure
+  secret: habitChallengeSecretKey2024HabitChallengeSecretKey2024
   expiration: 86400000  # 24시간 (밀리초 단위)
   token-prefix: "Bearer "
   header: "Authorization"
-
 
 # 로깅 설정
 logging:

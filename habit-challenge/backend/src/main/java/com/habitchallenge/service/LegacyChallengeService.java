@@ -11,7 +11,7 @@ import java.util.Random;
  * 챌린지 관련 비즈니스 로직을 처리하는 서비스 클래스
  */
 @Service
-public class ChallengeService {
+public class LegacyChallengeService {
     
     // 미리 정의된 챌린지 목록
     private final List<String> challenges = Arrays.asList(
