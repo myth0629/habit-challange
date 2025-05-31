@@ -99,7 +99,8 @@ compileJava {
     options.compilerArgs = [
         '-Amapstruct.defaultComponentModel=spring',
         '--add-modules', 'jdk.incubator.vector',
-        '--release', '17'
+        '--release', '17',
+        '-parameters'
     ]
     options.encoding = 'UTF-8'
 }

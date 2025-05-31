@@ -53,18 +53,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = parseJwt(request);
             logger.debug("JWT Token: " + (jwt != null ? "[HIDDEN]" : "null"));
             
-            if (jwt != null && jwtUtil.validateToken(jwt, null)) {
+            if (jwt != null && jwtUtil.validateToken(jwt)) {
                 String username = jwtUtil.extractUsername(jwt);
                 logger.debug("Valid JWT token for user: " + username);
                 
                 UserDetails userDetails = userService.loadUserByUsername(username);
                 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                logger.debug("Successfully set authentication for user: " + username);
+                // 사용자 세부 정보로 토큰 추가 검증
+                if (jwtUtil.validateToken(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    logger.debug("Successfully set authentication for user: " + username);
+                } else {
+                    logger.warn("Token validation with user details failed for user: " + username);
+                }
             } else {
                 logger.warn("No valid JWT token found");
             }

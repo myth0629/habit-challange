@@ -76,9 +76,22 @@ public class JwtUtil {
                 .compact();
     }
     
+    /**
+     * UserDetails를 사용하여 토큰을 검증합니다.
+     * 사용자 이름과 토큰 만료 여부를 확인합니다.
+     */
     public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        if (token == null || userDetails == null) {
+            return false;
+        }
+        
+        try {
+            final String username = extractUsername(token);
+            return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        } catch (Exception e) {
+            logger.error("토큰 검증 중 오류 발생: {}", e.getMessage());
+            return false;
+        }
     }
     
     public String resolveToken(String header) {
@@ -88,23 +101,41 @@ public class JwtUtil {
         return null;
     }
     
+    /**
+     * 토큰의 유효성만 검증합니다.
+     * 사용자 정보 없이 토큰 자체의 유효성만 확인합니다.
+     */
     public boolean validateToken(String token) {
+        if (token == null) {
+            logger.warn("토큰이 null입니다.");
+            return false;
+        }
+        
         try {
             Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token);
+                
+            // 토큰이 만료되었는지 확인
+            if (isTokenExpired(token)) {
+                logger.warn("토큰이 만료되었습니다.");
+                return false;
+            }
+            
             return true;
         } catch (MalformedJwtException ex) {
-            logger.error("Invalid JWT token: {}", ex.getMessage());
+            logger.error("유효하지 않은 JWT 토큰: {}", ex.getMessage());
         } catch (ExpiredJwtException ex) {
-            logger.error("JWT token is expired: {}", ex.getMessage());
+            logger.error("JWT 토큰이 만료됨: {}", ex.getMessage());
         } catch (UnsupportedJwtException ex) {
-            logger.error("JWT token is unsupported: {}", ex.getMessage());
+            logger.error("지원되지 않는 JWT 토큰: {}", ex.getMessage());
         } catch (IllegalArgumentException ex) {
-            logger.error("JWT claims string is empty: {}", ex.getMessage());
+            logger.error("JWT claims 문자열이 비어있음: {}", ex.getMessage());
         } catch (SignatureException ex) {
-            logger.error("JWT signature does not match: {}", ex.getMessage());
+            logger.error("유효하지 않은 JWT 서명: {}", ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("JWT 토큰 검증 중 예상치 못한 오류: {}", ex.getMessage());
         }
         return false;
     }
