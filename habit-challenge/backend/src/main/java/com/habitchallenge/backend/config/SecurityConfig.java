@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/users/register").permitAll()
                 .requestMatchers("/api/challenges/**").permitAll()
                 .requestMatchers("/challenges/**").permitAll()
+                .requestMatchers("/api/ranking/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Preflight 요청 허용
                 .anyRequest().authenticated()

@@ -41,6 +41,12 @@ public class UserChallenge extends BaseTimeEntity {
     @Column
     private String note;
 
+    @Column
+    private String photoUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String review;
+
     /**
      * 챌린지 상태 업데이트
      * @param status 새로운 상태
@@ -63,5 +69,32 @@ public class UserChallenge extends BaseTimeEntity {
      */
     public void updateNote(String note) {
         this.note = note;
+    }
+
+    /**
+     * 챌린지 사진 URL 업데이트
+     * @param photoUrl 새로운 사진 URL
+     */
+    public void updatePhotoUrl(String photoUrl) {
+        this.photoUrl = photoUrl;
+    }
+
+    /**
+     * 챌린지 후기 업데이트
+     * @param review 새로운 후기
+     */
+    public void updateReview(String review) {
+        this.review = review;
+    }
+
+    /**
+     * 챌린지 완료 정보 업데이트 (사진과 후기 포함)
+     * @param photoUrl 사진 URL
+     * @param review 후기
+     */
+    public void completeChallenge(String photoUrl, String review) {
+        this.photoUrl = photoUrl;
+        this.review = review;
+        this.status = ChallengeStatus.COMPLETED;
     }
 }

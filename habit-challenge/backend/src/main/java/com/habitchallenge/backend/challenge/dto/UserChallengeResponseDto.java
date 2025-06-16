@@ -31,6 +31,8 @@ public class UserChallengeResponseDto {
     private String status;
     private String statusDisplayName;
     private String note;
+    private String photoUrl;
+    private String review;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -54,6 +56,8 @@ public class UserChallengeResponseDto {
                 .status(userChallenge.getStatus().name())
                 .statusDisplayName(userChallenge.getStatus().getDisplayName())
                 .note(userChallenge.getNote())
+                .photoUrl(userChallenge.getPhotoUrl())
+                .review(userChallenge.getReview())
                 .createdAt(userChallenge.getCreatedAt())
                 .updatedAt(userChallenge.getUpdatedAt())
                 .build();

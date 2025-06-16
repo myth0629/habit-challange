@@ -69,9 +69,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     logger.debug("Successfully set authentication for user: " + username);
                 } else {
                     logger.warn("Token validation with user details failed for user: " + username);
+                    // 토큰 검증 실패 시 401 응답
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"토큰이 유효하지 않습니다\"}");
+                    return;
                 }
             } else {
                 logger.warn("No valid JWT token found");
+                // 유효한 토큰이 없을 때 401 응답
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"인증이 필요합니다\"}");
+                return;
             }
         } catch (Exception e) {
             String errorMsg = "사용자 인증 설정 중 오류가 발생했습니다: " + e.getMessage();

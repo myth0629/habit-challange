@@ -1,9 +1,13 @@
 package com.habitchallenge.backend.challenge.service;
 
 import com.habitchallenge.backend.challenge.domain.Challenge;
+import com.habitchallenge.backend.challenge.domain.ChallengeCategory;
 import com.habitchallenge.backend.challenge.domain.ChallengeStatus;
 import com.habitchallenge.backend.challenge.domain.UserChallenge;
 import com.habitchallenge.backend.challenge.dto.UserChallengeResponseDto;
+import com.habitchallenge.backend.challenge.dto.UserRankingDto;
+import com.habitchallenge.backend.challenge.dto.ChallengeCompletionDto;
+import com.habitchallenge.backend.challenge.dto.ChallengeReviewDto;
 import com.habitchallenge.backend.challenge.repository.ChallengeRepository;
 import com.habitchallenge.backend.challenge.repository.UserChallengeRepository;
 import com.habitchallenge.backend.user.domain.User;
@@ -14,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -182,7 +187,7 @@ public class UserChallengeService {
 
     /**
      * 사용자의 특정 날짜 챌린지 기록 조회
-     * @param userId 사용자 ID
+     * @param userId 사용자 ID  
      * @param date 날짜
      * @return 사용자의 특정 날짜 챌린지 기록
      */
@@ -306,5 +311,185 @@ public class UserChallengeService {
         
         UserChallenge updatedUserChallenge = userChallengeRepository.save(userChallenge);
         return Optional.of(UserChallengeResponseDto.from(updatedUserChallenge));
+    }
+
+    /**
+     * 챌린지 완료 (사진과 후기 포함)
+     * @param userChallengeId 사용자 챌린지 ID
+     * @param completionDto 챌린지 완료 정보 (사진 URL, 후기)
+     * @return 완료된 사용자 챌린지 정보
+     */
+    @Transactional
+    public Optional<UserChallengeResponseDto> completeChallenge(Long userChallengeId, ChallengeCompletionDto completionDto) {
+        log.debug("챌린지 완료: ID={}, 사진={}, 후기={}", userChallengeId, completionDto.getPhotoUrl(), completionDto.getReview());
+        
+        try {
+            Optional<UserChallenge> userChallengeOptional = userChallengeRepository.findById(userChallengeId);
+            if (userChallengeOptional.isEmpty()) {
+                log.error("사용자 챌린지를 찾을 수 없습니다. ID: {}", userChallengeId);
+                return Optional.empty();
+            }
+            
+            UserChallenge userChallenge = userChallengeOptional.get();
+            
+            // 사진과 후기가 모두 있는지 확인
+            if (completionDto.getPhotoUrl() == null || completionDto.getPhotoUrl().trim().isEmpty()) {
+                log.error("챌린지 완료를 위해서는 사진이 필요합니다. ID: {}", userChallengeId);
+                return Optional.empty();
+            }
+            
+            if (completionDto.getReview() == null || completionDto.getReview().trim().isEmpty()) {
+                log.error("챌린지 완료를 위해서는 후기가 필요합니다. ID: {}", userChallengeId);
+                return Optional.empty();
+            }
+            
+            // 챌린지 완료 처리
+            userChallenge.completeChallenge(completionDto.getPhotoUrl(), completionDto.getReview());
+            
+            // 저장
+            UserChallenge completedUserChallenge = userChallengeRepository.save(userChallenge);
+            log.debug("챌린지 완료 처리 완료: ID={}", userChallengeId);
+            
+            // DTO 변환 및 반환
+            return Optional.of(UserChallengeResponseDto.from(completedUserChallenge));
+        } catch (Exception e) {
+            log.error("챌린지 완료 처리 중 오류 발생: {}", e.getMessage());
+            e.printStackTrace();
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 사용자의 특정 카테고리 챌린지 기록 조회
+     * @param userId 사용자 ID
+     * @param category 챌린지 카테고리
+     * @return 해당 카테고리의 챌린지 기록 목록
+     */
+    @Transactional(readOnly = true)
+    public List<UserChallengeResponseDto> getUserChallengesByCategory(Long userId, ChallengeCategory category) {
+        log.debug("사용자 ID {}의 카테고리 {} 챌린지 기록 조회", userId, category);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
+
+        return userChallengeRepository.findByUserAndChallenge_CategoryOrderByCreatedAtDesc(user, category).stream()
+                .map(UserChallengeResponseDto::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 모든 사용자의 챌린지 완료 랭킹 조회
+     * @return 사용자 랭킹 목록
+     */
+    @Transactional(readOnly = true)
+    public List<UserRankingDto> getUserRankings() {
+        log.debug("사용자 챌린지 완료 랭킹 조회");
+        
+        List<Object[]> stats = userChallengeRepository.findUserChallengeStatsOrderByCompletedCount();
+        List<UserRankingDto> rankings = new ArrayList<>();
+        
+        for (int i = 0; i < stats.size(); i++) {
+            Object[] stat = stats.get(i);
+            Long userId = (Long) stat[0];
+            String userNickname = (String) stat[1];
+            String userEmail = (String) stat[2];
+            Long completedCount = (Long) stat[3];
+            Long totalCount = (Long) stat[4];
+            
+            // 완료율 계산
+            double completionRate = totalCount > 0 ? (double) completedCount / totalCount * 100 : 0;
+            
+            UserRankingDto ranking = UserRankingDto.builder()
+                    .userId(userId)
+                    .userNickname(userNickname)
+                    .userEmail(userEmail)
+                    .completedChallengesCount(completedCount)
+                    .totalChallengesCount(totalCount)
+                    .completionRate(Math.round(completionRate * 100.0) / 100.0) // 소수점 2자리까지
+                    .rank(i + 1)
+                    .profileImageUrl(null) // 프로필 이미지 URL은 추후 추가
+                    .build();
+            
+            rankings.add(ranking);
+        }
+        
+        log.debug("랭킹 조회 완료: {} 명의 사용자", rankings.size());
+        return rankings;
+    }
+
+    /**
+     * 특정 사용자의 랭킹 정보 조회
+     * @param userId 사용자 ID
+     * @return 사용자 랭킹 정보
+     */
+    @Transactional(readOnly = true)
+    public Optional<UserRankingDto> getUserRanking(Long userId) {
+        log.debug("사용자 ID {}의 랭킹 정보 조회", userId);
+        
+        List<UserRankingDto> allRankings = getUserRankings();
+        return allRankings.stream()
+                .filter(ranking -> ranking.getUserId().equals(userId))
+                .findFirst();
+    }
+
+    /**
+     * 모든 사용자의 챌린지 후기 조회 (최신순)
+     * @return 모든 사용자의 챌린지 후기 목록
+     */
+    @Transactional(readOnly = true)
+    public List<ChallengeReviewDto> getAllChallengeReviews() {
+        log.debug("모든 사용자의 챌린지 후기 조회");
+        
+        List<UserChallenge> completedChallenges = userChallengeRepository
+                .findByStatusAndReviewIsNotNullAndPhotoUrlIsNotNullOrderByCreatedAtDesc(ChallengeStatus.COMPLETED);
+        
+        return completedChallenges.stream()
+                .map(this::convertToChallengeReviewDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 사용자의 챌린지 후기 조회 (최신순)
+     * @param userId 사용자 ID
+     * @return 해당 사용자의 챌린지 후기 목록
+     */
+    @Transactional(readOnly = true)
+    public List<ChallengeReviewDto> getUserChallengeReviews(Long userId) {
+        log.debug("사용자 ID {}의 챌린지 후기 조회", userId);
+        
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            log.error("사용자를 찾을 수 없습니다. ID: {}", userId);
+            return List.of();
+        }
+        
+        List<UserChallenge> completedChallenges = userChallengeRepository
+                .findByUserAndStatusAndReviewIsNotNullOrderByCreatedAtDesc(userOptional.get(), ChallengeStatus.COMPLETED);
+        
+        return completedChallenges.stream()
+                .map(this::convertToChallengeReviewDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * UserChallenge를 ChallengeReviewDto로 변환
+     * @param userChallenge 사용자 챌린지 엔티티
+     * @return 챌린지 후기 DTO
+     */
+    private ChallengeReviewDto convertToChallengeReviewDto(UserChallenge userChallenge) {
+        return ChallengeReviewDto.builder()
+                .id(userChallenge.getId())
+                .userId(userChallenge.getUser().getId())
+                .userNickname(userChallenge.getUser().getNickname())
+                .challengeId(userChallenge.getChallenge().getId())
+                .challengeTitle(userChallenge.getChallenge().getTitle())
+                .challengeDescription(userChallenge.getChallenge().getDescription())
+                .category(userChallenge.getChallenge().getCategory().name())
+                .categoryDisplayName(userChallenge.getChallenge().getCategory().getDisplayName())
+                .difficulty(userChallenge.getChallenge().getDifficulty())
+                .challengeDate(userChallenge.getChallengeDate())
+                .photoUrl(userChallenge.getPhotoUrl())
+                .review(userChallenge.getReview())
+                .createdAt(userChallenge.getCreatedAt())
+                .build();
     }
 }

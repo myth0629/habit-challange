@@ -41,7 +41,7 @@ public class User implements UserDetails {
     private String nickname;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(length = 20, nullable = false)
     private UserRole role;
 
     @CreationTimestamp
@@ -90,5 +90,19 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    /**
+     * 닉네임 업데이트
+     */
+    public void updateNickname(String newNickname) {
+        this.nickname = newNickname;
+    }
+
+    /**
+     * 비밀번호 업데이트
+     */
+    public void updatePassword(String newPassword) {
+        this.password = newPassword;
     }
 }

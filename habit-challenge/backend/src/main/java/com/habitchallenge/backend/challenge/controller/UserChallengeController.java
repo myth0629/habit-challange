@@ -2,6 +2,7 @@ package com.habitchallenge.backend.challenge.controller;
 
 import com.habitchallenge.backend.challenge.domain.ChallengeStatus;
 import com.habitchallenge.backend.challenge.dto.UserChallengeResponseDto;
+import com.habitchallenge.backend.challenge.dto.ChallengeCompletionDto;
 import com.habitchallenge.backend.challenge.service.UserChallengeService;
 import com.habitchallenge.backend.common.dto.ErrorResponse;
 import com.habitchallenge.backend.user.domain.User;
@@ -340,12 +341,71 @@ public ResponseEntity<?> assignSpecificChallenge(
     public ResponseEntity<UserChallengeResponseDto> updateChallengeNote(
             @PathVariable Long userChallengeId,
             @RequestBody String note) {
-        log.debug("사용자 챌린지 노트 업데이트 API 호출: ID={}", userChallengeId);
+        log.debug("사용자 챌린지 노트 업데이트 API 호출: ID={}, 노트={}", userChallengeId, note);
         
-        Optional<UserChallengeResponseDto> userChallenge = userChallengeService.updateChallengeNote(userChallengeId, note);
+        try {
+            Optional<UserChallengeResponseDto> updatedChallenge = userChallengeService.updateChallengeNote(userChallengeId, note);
+            
+            return updatedChallenge
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("챌린지 노트 업데이트 중 오류 발생: {}", e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * 챌린지 완료 API (사진과 후기 포함)
+     * @param userChallengeId 사용자 챌린지 ID
+     * @param completionDto 챌린지 완료 정보 (사진 URL, 후기)
+     * @param userDetails 인증된 사용자 정보
+     * @return 완료된 사용자 챌린지 정보
+     */
+    @PostMapping("/{userChallengeId}/complete")
+    public ResponseEntity<?> completeChallenge(
+            @PathVariable Long userChallengeId,
+            @RequestBody ChallengeCompletionDto completionDto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        log.debug("챌린지 완료 API 호출: ID={}, 사진={}, 후기={}", userChallengeId, completionDto.getPhotoUrl(), completionDto.getReview());
         
-        return userChallenge
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        if (userDetails == null) {
+            log.error("인증된 사용자 정보가 없습니다.");
+            return ResponseEntity.badRequest().build();
+        }
+        
+        try {
+            // 사용자 이메일을 토큰에서 추출
+            String email = userDetails.getUsername();
+            log.debug("사용자 이메일: {}", email);
+            
+            // 이메일로 사용자 조회
+            Optional<User> userOptional = userRepository.findByEmail(email);
+            if (userOptional.isEmpty()) {
+                log.error("이메일로 사용자를 찾을 수 없습니다: {}", email);
+                return ResponseEntity.badRequest().build();
+            }
+            
+            Long userId = userOptional.get().getId();
+            log.debug("사용자 ID: {}", userId);
+            
+            // 챌린지 완료 처리
+            Optional<UserChallengeResponseDto> completedChallenge = userChallengeService.completeChallenge(userChallengeId, completionDto);
+            
+            if (completedChallenge.isEmpty()) {
+                log.error("챌린지 완료 처리 실패: ID={}", userChallengeId);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("Failed to complete challenge. Please check if photo and review are provided."));
+            }
+            
+            log.debug("챌린지 완료 처리 성공: ID={}", userChallengeId);
+            return ResponseEntity.ok(completedChallenge.get());
+        } catch (Exception e) {
+            log.error("챌린지 완료 처리 중 오류 발생: {}", e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("An error occurred while completing the challenge: " + e.getMessage()));
+        }
     }
 }

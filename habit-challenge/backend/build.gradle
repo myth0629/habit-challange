@@ -73,6 +73,9 @@ dependencies {
     // Apache Commons Lang
     implementation 'org.apache.commons:commons-lang3:3.13.0'
     
+    // Spring Boot Mail
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
