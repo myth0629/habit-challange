@@ -45,13 +45,16 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/ranking").permitAll()
+                .requestMatchers("/api/ranking/my-ranking").authenticated()
+                .requestMatchers("/api/ranking/{userId}").permitAll()
+                .requestMatchers("/api/challenge-reviews/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/api/users/register").permitAll()
                 .requestMatchers("/users/register").permitAll()
                 .requestMatchers("/api/challenges/**").permitAll()
                 .requestMatchers("/challenges/**").permitAll()
-                .requestMatchers("/api/ranking/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Preflight 요청 허용
                 .anyRequest().authenticated()

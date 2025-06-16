@@ -59,7 +59,7 @@ public class ChallengeReviewController {
         
         if (userDetails == null) {
             log.error("인증된 사용자 정보가 없습니다.");
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(401).build();
         }
         
         try {

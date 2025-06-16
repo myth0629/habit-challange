@@ -44,6 +44,9 @@ public class User implements UserDetails {
     @Column(length = 20, nullable = false)
     private UserRole role;
 
+    @Column(name = "kakao_id", unique = true)
+    private Long kakaoId;
+
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
     private LocalDateTime createdAt;
@@ -104,5 +107,19 @@ public class User implements UserDetails {
      */
     public void updatePassword(String newPassword) {
         this.password = newPassword;
+    }
+
+    /**
+     * 카카오 ID 설정
+     */
+    public void setKakaoId(Long kakaoId) {
+        this.kakaoId = kakaoId;
+    }
+
+    /**
+     * 카카오 ID 조회
+     */
+    public Long getKakaoId() {
+        return kakaoId;
     }
 }

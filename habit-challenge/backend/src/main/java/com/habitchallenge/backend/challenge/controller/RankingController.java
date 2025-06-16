@@ -53,11 +53,12 @@ public class RankingController {
      */
     @GetMapping("/my-ranking")
     public ResponseEntity<UserRankingDto> getMyRanking(@AuthenticationPrincipal UserDetails userDetails) {
-        log.debug("내 랭킹 정보 조회 요청: 사용자={}", userDetails.getUsername());
+        log.debug("내 랭킹 정보 조회 요청: 사용자={}", userDetails != null ? userDetails.getUsername() : "null");
         
         if (userDetails == null) {
-            log.error("인증된 사용자 정보가 없습니다.");
-            return ResponseEntity.badRequest().build();
+            log.error("인증된 사용자 정보가 없습니다. JWT 토큰이 유효하지 않거나 누락되었습니다.");
+            return ResponseEntity.status(401)
+                .body(null); // 401 Unauthorized
         }
         
         try {
@@ -65,7 +66,8 @@ public class RankingController {
             Optional<User> userOptional = userRepository.findByEmail(userDetails.getUsername());
             if (userOptional.isEmpty()) {
                 log.error("사용자를 찾을 수 없습니다: {}", userDetails.getUsername());
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(404)
+                    .body(null); // 404 Not Found
             }
             
             User user = userOptional.get();
@@ -73,7 +75,8 @@ public class RankingController {
             
             if (rankingOptional.isEmpty()) {
                 log.debug("사용자 {}의 랭킹 정보가 없습니다.", user.getId());
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(404)
+                    .body(null); // 404 Not Found
             }
             
             UserRankingDto ranking = rankingOptional.get();
@@ -82,7 +85,8 @@ public class RankingController {
         } catch (Exception e) {
             log.error("내 랭킹 조회 중 오류 발생: {}", e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.status(500)
+                .body(null); // 500 Internal Server Error
         }
     }
 

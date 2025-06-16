@@ -42,6 +42,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             path.startsWith("/users/register") ||
             path.startsWith("/api/challenges/all") ||
             path.startsWith("/challenges/all") ||
+            path.equals("/api/ranking") || // 전체 랭킹 조회만 공개
+            (path.startsWith("/api/ranking/") && !path.equals("/api/ranking/my-ranking")) || // 개인 랭킹 조회는 인증 필요
+            (path.startsWith("/api/challenge-reviews") && !path.equals("/api/challenge-reviews/my")) ||
             path.equals("/error") ||
             method.equals("OPTIONS")) {
             logger.debug("Skipping JWT validation for public endpoint: " + path);
