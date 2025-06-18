@@ -44,4 +44,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return Optional로 감싼 사용자 정보
      */
     Optional<User> findByNickname(String nickname);
+    
+    /**
+     * 카카오 ID로 사용자를 조회합니다.
+     *
+     * @param kakaoId 조회할 카카오 ID
+     * @return Optional로 감싼 사용자 정보
+     */
+    Optional<User> findByKakaoId(Long kakaoId);
 }

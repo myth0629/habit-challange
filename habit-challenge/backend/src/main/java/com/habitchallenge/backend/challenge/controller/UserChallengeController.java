@@ -345,10 +345,10 @@ public ResponseEntity<?> assignSpecificChallenge(
         
         try {
             Optional<UserChallengeResponseDto> updatedChallenge = userChallengeService.updateChallengeNote(userChallengeId, note);
-            
+        
             return updatedChallenge
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
             log.error("챌린지 노트 업데이트 중 오류 발생: {}", e.getMessage());
             e.printStackTrace();
